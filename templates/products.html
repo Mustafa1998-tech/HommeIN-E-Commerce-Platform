@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المنتجات - HommeIN</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">HommeIN</a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">الرئيسية</a></li>
+                    <li><a href="/products" class="nav-link">المنتجات</a></li>
+                    <li><a href="/cart" class="nav-link" style="position: relative;">
+                            السلة
+                            <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+                        </a></li>
+                </ul>
+                <div id="auth-buttons" class="flex gap-2"></div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 3rem 0;">
+        <h1 class="text-center">المنتجات</h1>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="flex gap-2" style="flex-wrap: wrap; align-items: center;">
+                <input type="text" id="search-input" class="form-input" placeholder="ابحث عن منتج..."
+                    style="flex: 1; min-width: 250px;">
+                <select id="category-filter" class="form-select" style="min-width: 200px;">
+                    <option value="">جميع التصنيفات</option>
+                </select>
+                <select id="sort-filter" class="form-select" style="min-width: 200px;">
+                    <option value="created_at">الأحدث</option>
+                    <option value="price_asc">السعر: من الأقل للأعلى</option>
+                    <option value="price_desc">السعر: من الأعلى للأقل</option>
+                    <option value="name">الاسم</option>
+                    <option value="rating">الأعلى تقييماً</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="products-grid" class="grid grid-4"></div>
+
+        <!-- Loading -->
+        <div id="loading" class="flex-center" style="padding: 3rem;">
+            <div class="spinner"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2024 HommeIN. جميع الحقوق محفوظة.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/cart.js"></script>
+    <script>
+        let currentFilters = {
+            search: '',
+            category_id: null,
+            sort_by: 'created_at'
+        };
+
+        async function loadProducts() {
+            const loading = document.getElementById('loading');
+            const grid = document.getElementById('products-grid');
+
+            loading.style.display = 'flex';
+            grid.innerHTML = '';
+
+            try {
+                const products = await api.getProducts(currentFilters);
+
+                loading.style.display = 'none';
+
+                if (products.length === 0) {
+                    grid.innerHTML = '<p class="text-center" style="grid-column: 1 / -1;">لا توجد منتجات</p>';
+                    return;
+                }
+
+                grid.innerHTML = products.map(product => `
+                    <div class="card card-product" onclick="window.location.href='/product/${product.id}'">
+                        <img src="${product.image_url || 'https://via.placeholder.com/300'}" alt="${product.name}">
+                        <div class="card-body">
+                            <h3 class="card-title">${product.name}</h3>
+                            ${product.brand ? `<p class="card-text">${product.brand}</p>` : ''}
+                            <div class="flex" style="align-items: center; justify-content: space-between; margin-top: 1rem;">
+                                <div>
+                                    <span class="price">${formatPrice(product.sale_price || product.price)}</span>
+                                    ${product.sale_price ? `<span class="price-old">${formatPrice(product.price)}</span>` : ''}
+                                </div>
+                                ${product.is_available ? '<span class="badge badge-success">متوفر</span>' : '<span class="badge badge-error">غير متوفر</span>'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                loading.style.display = 'none';
+                grid.innerHTML = '<p class="text-center" style="grid-column: 1 / -1; color: var(--error);">فشل تحميل المنتجات</p>';
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                const categories = await api.getCategories();
+                const select = document.getElementById('category-filter');
+                select.innerHTML = '<option value="">جميع التصنيفات</option>' +
+                    categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            currentFilters.search = e.target.value;
+            loadProducts();
+        });
+
+        document.getElementById('category-filter').addEventListener('change', (e) => {
+            currentFilters.category_id = e.target.value ? parseInt(e.target.value) : null;
+            loadProducts();
+        });
+
+        document.getElementById('sort-filter').addEventListener('change', (e) => {
+            currentFilters.sort_by = e.target.value;
+            loadProducts();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cart.loadCart();
+            await loadCategories();
+
+            // Check for category filter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const categoryId = urlParams.get('category_id');
+            if (categoryId) {
+                currentFilters.category_id = parseInt(categoryId);
+                document.getElementById('category-filter').value = categoryId;
+            }
+
+            await loadProducts();
+        });
+    </script>
+</body>
+
+</html>

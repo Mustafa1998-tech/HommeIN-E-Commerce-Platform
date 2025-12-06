@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حسابي - HommeIN</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">HommeIN</a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">الرئيسية</a></li>
+                    <li><a href="/products" class="nav-link">المنتجات</a></li>
+                    <li><a href="/cart" class="nav-link" style="position: relative;">
+                            السلة
+                            <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+                        </a></li>
+                </ul>
+                <div id="auth-buttons" class="flex gap-2"></div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 3rem 0;">
+        <h1>حسابي</h1>
+
+        <div style="display: grid; grid-template-columns: 250px 1fr; gap: 2rem; margin-top: 2rem;">
+            <!-- Sidebar -->
+            <div class="card" style="height: fit-content;">
+                <div id="user-info"
+                    style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                </div>
+                <button onclick="Auth.logout()" class="btn btn-outline" style="width: 100%;">تسجيل الخروج</button>
+            </div>
+
+            <!-- Orders -->
+            <div>
+                <h2>طلباتي</h2>
+                <div id="orders-list"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/cart.js"></script>
+    <script>
+        async function loadAccount() {
+            if (!Auth.isLoggedIn()) {
+                alert('يجب تسجيل الدخول');
+                window.location.href = '/';
+                return;
+            }
+
+            const user = Auth.getStoredUser();
+            document.getElementById('user-info').innerHTML = `
+                <h3>${user.full_name || user.username}</h3>
+                <p style="color: var(--text-secondary);">${user.email}</p>
+            `;
+
+            // Load orders
+            try {
+                const orders = await api.getOrders();
+                const ordersList = document.getElementById('orders-list');
+
+                if (orders.length === 0) {
+                    ordersList.innerHTML = '<p style="color: var(--text-secondary);">لا توجد طلبات</p>';
+                    return;
+                }
+
+                ordersList.innerHTML = orders.map(order => `
+                    <div class="card" style="margin-bottom: 1rem;">
+                        <div class="flex" style="justify-content: space-between; align-items: start;">
+                            <div>
+                                <h4>طلب #${order.order_number}</h4>
+                                <p style="color: var(--text-secondary);">${formatDate(order.created_at)}</p>
+                                <p class="price">${formatPrice(order.total_amount)}</p>
+                            </div>
+                            <span class="badge badge-${getStatusColor(order.status)}">${getStatusText(order.status)}</span>
+                        </div>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <p><strong>العنوان:</strong> ${order.shipping_address}, ${order.shipping_city}</p>
+                            <p><strong>الهاتف:</strong> ${order.phone}</p>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+            }
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                pending: 'warning',
+                confirmed: 'info',
+                processing: 'info',
+                shipped: 'primary',
+                delivered: 'success',
+                cancelled: 'error',
+            };
+            return colors[status] || 'info';
+        }
+
+        function getStatusText(status) {
+            const texts = {
+                pending: 'معلقة',
+                confirmed: 'مؤكدة',
+                processing: 'قيد المعالجة',
+                shipped: 'تم الشحن',
+                delivered: 'تم التوصيل',
+                cancelled: 'ملغي',
+            };
+            return texts[status] || status;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cart.loadCart();
+            await loadAccount();
+        });
+    </script>
+</body>
+
+</html>

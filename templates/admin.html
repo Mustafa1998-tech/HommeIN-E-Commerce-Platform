@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - HommeIN</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .admin-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+            gap: 2rem;
+            padding: 2rem;
+        }
+
+        .admin-sidebar {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .admin-nav {
+            list-style: none;
+        }
+
+        .admin-nav li {
+            margin-bottom: var(--space-sm);
+        }
+
+        .admin-nav button {
+            width: 100%;
+            text-align: right;
+            padding: var(--space-md);
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-fast);
+            font-size: 1rem;
+        }
+
+        .admin-nav button:hover,
+        .admin-nav button.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .admin-content {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-2xl);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: var(--space-sm);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: var(--space-lg);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: var(--space-md);
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table th {
+            background: var(--bg-card);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-table tr:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .product-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-lg);
+        }
+
+        .product-form .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .product-image-preview {
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            margin-top: var(--space-md);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <h2 style="margin-bottom: var(--space-xl); color: var(--primary);">لوحة الإدارة</h2>
+            <ul class="admin-nav">
+                <li><button onclick="showSection('dashboard')" class="active">لوحة المعلومات</button></li>
+                <li><button onclick="showSection('products')">إدارة المنتجات</button></li>
+                <li><button onclick="showSection('orders')">الطلبات</button></li>
+                <li><button onclick="showSection('categories')">التصنيفات</button></li>
+            </ul>
+            <button onclick="window.location.href='/'" class="btn btn-outline"
+                style="width: 100%; margin-top: var(--space-xl);">
+                العودة للموقع
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="admin-section active">
+                <h1>لوحة المعلومات</h1>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-products">0</div>
+                        <div class="stat-label">إجمالي المنتجات</div>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);">
+                        <div class="stat-value" id="total-orders">0</div>
+                        <div class="stat-label">إجمالي الطلبات</div>
+                    </div>
+                    <div class="stat-card"
+                        style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%);">
+                        <div class="stat-value" id="pending-orders">0</div>
+                        <div class="stat-label">الطلبات المعلقة</div>
+                    </div>
+                </div>
+
+                <h3>الطلبات الأخيرة</h3>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-orders"></tbody>
+                </table>
+            </section>
+
+            <!-- Products Section -->
+            <section id="products" class="admin-section">
+                <div class="flex"
+                    style="justify-content: space-between; align-items: center; margin-bottom: var(--space-xl);">
+                    <h1>إدارة المنتجات</h1>
+                    <button onclick="showAddProductForm()" class="btn btn-primary">إضافة منتج جديد</button>
+                </div>
+
+                <!-- Add/Edit Product Form -->
+                <div id="product-form-container" style="display: none; margin-bottom: var(--space-2xl);">
+                    <h3 id="form-title">إضافة منتج جديد</h3>
+                    <form id="product-form" class="product-form">
+                        <input type="hidden" id="product-id">
+
+                        <div class="form-group">
+                            <label class="form-label">اسم المنتج *</label>
+                            <input type="text" id="product-name" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">SKU</label>
+                            <input type="text" id="product-sku" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">السعر *</label>
+                            <input type="number" id="product-price" class="form-input" step="0.01" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">سعر التخفيض</label>
+                            <input type="number" id="product-sale-price" class="form-input" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">الكمية المتوفرة *</label>
+                            <input type="number" id="product-stock" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">التصنيف</label>
+                            <select id="product-category" class="form-select"></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">العلامة التجارية</label>
+                            <input type="text" id="product-brand" class="form-input">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">متوفر</label>
+                            <select id="product-available" class="form-select">
+                                <option value="true">نعم</option>
+                                <option value="false">لا</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">الوصف</label>
+                            <textarea id="product-description" class="form-textarea" rows="4"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">صورة المنتج</label>
+                            <div style="margin-bottom: var(--space-md);">
+                                <label
+                                    style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+                                    <input type="radio" name="image-type" value="url" checked
+                                        onchange="toggleImageInput()">
+                                    <span>رابط الصورة</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-sm);">
+                                    <input type="radio" name="image-type" value="upload" onchange="toggleImageInput()">
+                                    <span>تحميل صورة (PNG, JPG)</span>
+                                </label>
+                            </div>
+
+                            <div id="url-input-container">
+                                <input type="url" id="product-image" class="form-input"
+                                    placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <div id="upload-input-container" style="display: none;">
+                                <input type="file" id="product-image-file" class="form-input"
+                                    accept=".jpg,.jpeg,.png,.gif,.webp">
+                                <button type="button" onclick="uploadImage()" class="btn btn-outline"
+                                    style="margin-top: var(--space-sm);">رفع الصورة</button>
+                                <div id="upload-progress"
+                                    style="display: none; margin-top: var(--space-sm); color: var(--info);">جاري
+                                    الرفع...</div>
+                            </div>
+
+                            <img id="image-preview" class="product-image-preview" style="display: none;">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">المقاسات (مفصولة بفاصلة)</label>
+                            <input type="text" id="product-sizes" class="form-input" placeholder="S,M,L,XL">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">الألوان (مفصولة بفاصلة)</label>
+                            <input type="text" id="product-colors" class="form-input" placeholder="أسود,أبيض,أزرق">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn btn-primary">حفظ</button>
+                                <button type="button" onclick="hideProductForm()" class="btn btn-outline">إلغاء</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Products Table -->
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>الصورة</th>
+                            <th>الاسم</th>
+                            <th>السعر</th>
+                            <th>الكمية</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table"></tbody>
+                </table>
+            </section>
+
+            <!-- Orders Section -->
+            <section id="orders" class="admin-section">
+                <h1>إدارة الطلبات</h1>
+
+                <div class="flex gap-2" style="margin-bottom: var(--space-lg);">
+                    <button onclick="filterOrders('all')" class="btn btn-outline">الكل</button>
+                    <button onclick="filterOrders('pending')" class="btn btn-outline">معلقة</button>
+                    <button onclick="filterOrders('confirmed')" class="btn btn-outline">مؤكدة</button>
+                    <button onclick="filterOrders('shipped')" class="btn btn-outline">تم الشحن</button>
+                    <button onclick="filterOrders('delivered')" class="btn btn-outline">تم التوصيل</button>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table"></tbody>
+                </table>
+            </section>
+
+            <!-- Categories Section -->
+            <section id="categories" class="admin-section">
+                <div class="flex"
+                    style="justify-content: space-between; align-items: center; margin-bottom: var(--space-xl);">
+                    <h1>إدارة التصنيفات</h1>
+                    <button onclick="showAddCategoryForm()" class="btn btn-primary">إضافة تصنيف</button>
+                </div>
+
+                <div id="category-form-container" style="display: none; margin-bottom: var(--space-2xl);">
+                    <h3>إضافة تصنيف جديد</h3>
+                    <form id="category-form">
+                        <div class="form-group">
+                            <label class="form-label">اسم التصنيف *</label>
+                            <input type="text" id="category-name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">الوصف</label>
+                            <textarea id="category-description" class="form-textarea" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">رابط الصورة</label>
+                            <input type="url" id="category-image" class="form-input">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn btn-primary">حفظ</button>
+                            <button type="button" onclick="hideCategoryForm()" class="btn btn-outline">إلغاء</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="categories-list" class="grid grid-3"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/cart.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+
+</html>

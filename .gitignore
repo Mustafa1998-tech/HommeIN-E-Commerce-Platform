@@ -1,0 +1,8 @@
+# Ignore uploaded files
+static/uploads/
+*.pyc
+__pycache__/
+*.db
+.env
+.venv/
+venv/

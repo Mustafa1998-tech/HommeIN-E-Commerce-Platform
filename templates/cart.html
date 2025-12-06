@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>السلة - HommeIN</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">HommeIN</a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">الرئيسية</a></li>
+                    <li><a href="/products" class="nav-link">المنتجات</a></li>
+                    <li><a href="/cart" class="nav-link" style="position: relative;">
+                            السلة
+                            <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+                        </a></li>
+                </ul>
+                <div id="auth-buttons" class="flex gap-2"></div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 3rem 0;">
+        <h1>سلة التسوق</h1>
+
+        <div id="cart-content" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
+            <!-- Cart Items -->
+            <div>
+                <div id="cart-items"></div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div>
+                <div class="card" style="position: sticky; top: 2rem;">
+                    <h3>ملخص الطلب</h3>
+                    <div
+                        style="margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div class="flex" style="justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>عدد المنتجات:</span>
+                            <span id="items-count">0</span>
+                        </div>
+                        <div class="flex"
+                            style="justify-content: space-between; font-size: 1.5rem; font-weight: 700; color: var(--primary-light);">
+                            <span>الإجمالي:</span>
+                            <span id="cart-total">0 جنيه</span>
+                        </div>
+                    </div>
+                    <button onclick="proceedToCheckout()" class="btn btn-primary" style="width: 100%;">إتمام
+                        الطلب</button>
+                    <button onclick="cart.clearCart(); location.reload();" class="btn btn-outline"
+                        style="width: 100%; margin-top: 0.5rem;">تفريغ السلة</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="empty-cart" style="display: none; text-align: center; padding: 4rem 0;">
+            <h2>السلة فارغة</h2>
+            <p style="color: var(--text-secondary); margin: 1rem 0;">لم تقم بإضافة أي منتجات بعد</p>
+            <a href="/products" class="btn btn-primary">تصفح المنتجات</a>
+        </div>
+    </main>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/cart.js"></script>
+    <script>
+        async function loadCart() {
+            if (!Auth.isLoggedIn()) {
+                document.getElementById('cart-content').style.display = 'none';
+                document.getElementById('empty-cart').innerHTML = `
+                    <h2>يجب تسجيل الدخول</h2>
+                    <p style="color: var(--text-secondary); margin: 1rem 0;">يجب تسجيل الدخول لعرض سلة التسوق</p>
+                    <button onclick="showLoginModal()" class="btn btn-primary">تسجيل الدخول</button>
+                `;
+                document.getElementById('empty-cart').style.display = 'block';
+                return;
+            }
+
+            const cartData = await cart.loadCart();
+
+            if (cartData.items.length === 0) {
+                document.getElementById('cart-content').style.display = 'none';
+                document.getElementById('empty-cart').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('cart-content').style.display = 'grid';
+            document.getElementById('empty-cart').style.display = 'none';
+
+            const itemsContainer = document.getElementById('cart-items');
+            itemsContainer.innerHTML = cartData.items.map(item => `
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="flex gap-2">
+                        <img src="${item.product_image || 'https://via.placeholder.com/100'}" style="width: 100px; height: 100px; object-fit: cover; border-radius: var(--radius-md);">
+                        <div style="flex: 1;">
+                            <h4>${item.product_name}</h4>
+                            ${item.size ? `<p class="card-text">المقاس: ${item.size}</p>` : ''}
+                            ${item.color ? `<p class="card-text">اللون: ${item.color}</p>` : ''}
+                            <p class="price">${formatPrice(item.price)}</p>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between;">
+                            <button onclick="cart.removeItem(${item.id}); location.reload();" class="btn-icon">&times;</button>
+                            <div class="flex gap-1" style="align-items: center;">
+                                <button onclick="updateQuantity(${item.id}, ${item.quantity - 1})" class="btn btn-outline" style="padding: 0.25rem 0.75rem;">-</button>
+                                <span style="padding: 0 1rem; font-weight: 600;">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, ${item.quantity + 1})" class="btn btn-outline" style="padding: 0.25rem 0.75rem;">+</button>
+                            </div>
+                            <p style="font-weight: 700; color: var(--primary-light);">${formatPrice(item.subtotal)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('items-count').textContent = cartData.items_count;
+            document.getElementById('cart-total').textContent = formatPrice(cartData.total);
+        }
+
+        async function updateQuantity(itemId, newQuantity) {
+            if (newQuantity < 1) return;
+            await cart.updateItem(itemId, newQuantity);
+            await loadCart();
+        }
+
+        function proceedToCheckout() {
+            window.location.href = '/checkout';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadCart);
+    </script>
+</body>
+
+</html>

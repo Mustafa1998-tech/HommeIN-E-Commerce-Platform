@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام الطلب - HommeIN</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="/" class="logo">HommeIN</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding: 3rem 0;">
+        <h1>إتمام الطلب</h1>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
+            <!-- Checkout Form -->
+            <div class="card">
+                <h3>معلومات الشحن</h3>
+                <form id="checkout-form">
+                    <div class="form-group">
+                        <label class="form-label">العنوان الكامل *</label>
+                        <textarea name="shipping_address" class="form-textarea" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">المدينة *</label>
+                        <input type="text" name="shipping_city" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الرمز البريدي *</label>
+                        <input type="text" name="shipping_postal_code" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">الدولة *</label>
+                        <input type="text" name="shipping_country" class="form-input" value="مصر" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">رقم الهاتف *</label>
+                        <input type="tel" name="phone" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">طريقة الدفع *</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="cash_on_delivery">الدفع عند الاستلام</option>
+                            <option value="credit_card">بطاقة ائتمان</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" class="form-textarea" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">تأكيد الطلب</button>
+                </form>
+            </div>
+
+            <!-- Order Summary -->
+            <div>
+                <div class="card" style="position: sticky; top: 2rem;">
+                    <h3>ملخص الطلب</h3>
+                    <div id="order-items" style="margin: 1rem 0;"></div>
+                    <div style="margin: 1.5rem 0; padding: 1.5rem 0; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <div class="flex"
+                            style="justify-content: space-between; font-size: 1.5rem; font-weight: 700; color: var(--primary-light);">
+                            <span>الإجمالي:</span>
+                            <span id="order-total">0 جنيه</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/cart.js"></script>
+    <script>
+        async function loadOrderSummary() {
+            if (!Auth.isLoggedIn()) {
+                alert('يجب تسجيل الدخول');
+                window.location.href = '/cart';
+                return;
+            }
+
+            const cartData = await cart.loadCart();
+
+            if (cartData.items.length === 0) {
+                alert('السلة فارغة');
+                window.location.href = '/cart';
+                return;
+            }
+
+            const itemsContainer = document.getElementById('order-items');
+            itemsContainer.innerHTML = cartData.items.map(item => `
+                <div class="flex" style="justify-content: space-between; margin-bottom: 0.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <span>${item.product_name} × ${item.quantity}</span>
+                    <span>${formatPrice(item.subtotal)}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('order-total').textContent = formatPrice(cartData.total);
+        }
+
+        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const orderData = {
+                shipping_address: formData.get('shipping_address'),
+                shipping_city: formData.get('shipping_city'),
+                shipping_postal_code: formData.get('shipping_postal_code'),
+                shipping_country: formData.get('shipping_country'),
+                phone: formData.get('phone'),
+                payment_method: formData.get('payment_method'),
+                notes: formData.get('notes'),
+            };
+
+            try {
+                const order = await api.createOrder(orderData);
+                alert(`تم إنشاء الطلب بنجاح! رقم الطلب: ${order.order_number}`);
+                window.location.href = '/account';
+            } catch (error) {
+                alert('فشل إنشاء الطلب: ' + error.message);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadOrderSummary);
+    </script>
+</body>
+
+</html>
