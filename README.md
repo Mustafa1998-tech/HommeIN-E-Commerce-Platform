@@ -66,11 +66,28 @@ python database/init_db.py
 
 ### 4. تشغيل الخادم
 
+**الطريقة الأولى: مباشرة**
 ```bash
 uvicorn main:app --reload
 ```
 
+**الطريقة الثانية: باستخدام Docker**
+```bash
+docker-compose up -d
+```
+
 الموقع سيعمل على: `http://localhost:8000`
+
+### 5. النشر على GitHub
+
+1. **ادفع المشروع إلى GitHub**
+2. **فعل GitHub Pages** في إعدادات المستودع
+3. **استخدم GitHub Actions** للنشر التلقائي
+
+يمكن نشر التطبيق باستخدام:
+- GitHub Actions (CI/CD)
+- Docker Containers
+- GitHub Pages (للمحتوى الثابت)
 
 ## بيانات الدخول الافتراضية
 
